@@ -1,0 +1,29 @@
+name: queirozbrindes.api
+
+services:
+  api:
+    image: nandoburgos/queirozbrindes.api
+    container_name: queirozbrindes.api
+    environment:
+      - PORT=4545
+      - DATABASE_URL=mysql://boz:Ewhblt69%21%40%23@boz.app.br:3306/queirozbrindes?connection_limit=20&socketTimeout=30
+      - URL=https://api-queirozbrindes.nandoburgos.dev
+      - WEBSITE_URL=https://queirozbrindes.nandoburgos.dev
+      - JWT_SECRET=0IGSGJ0IWOsdljfo
+      - SMTP_USER=get_from_github_secrets
+      - SMTP_PASS=get_from_github_secrets
+    ports:
+      - "4545:4545"
+    network_mode: "host"
+    restart: unless-stopped
+    volumes:
+      - static_volume:/app/static
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+volumes:
+  static_volume:
+    name: "planika_static_files"

@@ -1,0 +1,70 @@
+import express, { Express, Request, Response, Router } from "express"
+import { Order, OrderForm } from "../class/Order"
+import { OrderRequest, requireOrderId } from "../middlewares/requireOrderId"
+
+const router: Router = express.Router()
+
+router.get("/", async (request: Request, response: Response) => {
+    const order_id = request.query.order_id as string | undefined
+
+    try {
+        if (order_id) {
+            const order = await Order.get(order_id)
+            if (order) return response.json(order)
+            return response.status(404).send("Order not found")
+        }
+
+        const list = await Order.list()
+        return response.json(list)
+    } catch (error) {
+        console.log(error)
+        response.status(500).send(error)
+    }
+})
+
+router.post("/", async (request: Request, response: Response) => {
+    const data = request.body as OrderForm
+
+    try {
+        const order = await Order.create(data)
+        return response.json(order)
+    } catch (error) {
+        console.log(error)
+        response.status(500).send(error)
+    }
+})
+
+router.put("/", requireOrderId, async (request: OrderRequest, response: Response) => {
+    const data = request.body as OrderForm
+
+    try {
+        const order = request.order!
+        await order.update(data)
+        return response.json(order)
+    } catch (error) {
+        console.log(error)
+        response.status(500).send(error)
+    }
+})
+
+router.delete("/", requireOrderId, async (request: OrderRequest, response: Response) => {
+    try {
+        await request.order!.delete()
+        return response.status(204).send()
+    } catch (error) {
+        console.log(error)
+        response.status(500).send(error)
+    }
+})
+
+router.get("/next-available-number", async (request: Request, response: Response) => {
+    try {
+        const number = await Order.getNextAvailableNumber()
+        return response.send(number)
+    } catch (error) {
+        console.log(error)
+        response.status(500).send(error)
+    }
+})
+
+export default router
