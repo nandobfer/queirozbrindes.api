@@ -1,6 +1,6 @@
 import express, { Express, Request, Response, Router } from "express"
 import { version } from "./src/version"
-import order from "./src/rest/order"
+import order from "./src/rest/order/order"
 
 export const router: Router = express.Router()
 

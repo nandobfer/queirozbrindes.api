@@ -66,8 +66,18 @@ export class Order {
             data: {
                 customer: {
                     connectOrCreate: {
-                        where: { id: data.customerId },
-                        create: { ...data.customer },
+                        where: { id: data.customerId || "create" },
+                        create: {
+                            name: data.customer.name,
+                            city: data.customer.city,
+                            cnpj: data.customer.cnpj,
+                            company_name: data.customer.company_name,
+                            state_registration: data.customer.state_registration,
+                            street: data.customer.street,
+                            neighborhood: data.customer.neighborhood,
+                            state: data.customer.state,
+                            phone: data.customer.phone,
+                        },
                     },
                 },
                 items: JSON.stringify(data.items),
@@ -99,6 +109,7 @@ export class Order {
         this.customerId = data.customerId
         this.customer = new Customer(data.customer)
         this.items = JSON.parse(data.items as string)
+
     }
 
     async update(data: Partial<OrderForm>) {

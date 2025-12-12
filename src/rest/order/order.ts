@@ -1,11 +1,16 @@
 import express, { Express, Request, Response, Router } from "express"
-import { Order, OrderForm } from "../class/Order"
-import { OrderRequest, requireOrderId } from "../middlewares/requireOrderId"
+import { Order, OrderForm } from "../../class/Order"
+import { OrderRequest, requireOrderId } from "../../middlewares/requireOrderId"
+import item from "./item"
 
 const router: Router = express.Router()
 
+router.use('/item', requireOrderId, item)
+
 router.get("/", async (request: Request, response: Response) => {
     const order_id = request.query.order_id as string | undefined
+
+    console.log("getting request")
 
     try {
         if (order_id) {
@@ -27,6 +32,7 @@ router.post("/", async (request: Request, response: Response) => {
 
     try {
         const order = await Order.create(data)
+        console.log("created order:", order)
         return response.json(order)
     } catch (error) {
         console.log(error)
@@ -60,11 +66,13 @@ router.delete("/", requireOrderId, async (request: OrderRequest, response: Respo
 router.get("/next-available-number", async (request: Request, response: Response) => {
     try {
         const number = await Order.getNextAvailableNumber()
-        return response.send(number)
+        return response.json(number)
     } catch (error) {
         console.log(error)
         response.status(500).send(error)
     }
 })
+
+
 
 export default router
