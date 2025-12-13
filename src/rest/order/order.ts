@@ -76,6 +76,18 @@ router.get("/next-available-number", async (request: Request, response: Response
     }
 })
 
+router.get("/query", async (request: Request, response: Response) => {
+    const query = request.query.query as string
+    try {
+        const result = await Order.query(query)
+        console.log("order query result:", result)
+        return response.json(result)
+    } catch (error) {
+        console.log(error)
+        response.status(500).send(error)
+    }
+})
+
 router.get("/query-customer", async (request: Request, response: Response) => {
     const query = request.query.query as string
     try {

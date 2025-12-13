@@ -3,6 +3,7 @@ import { Customer } from "./Customer"
 import { Item } from "./Item"
 import { prisma } from "../prisma"
 import { WithoutFunctions } from "./helpers"
+import Fuse from "fuse.js"
 
 export const order_include = Prisma.validator<Prisma.OrderInclude>()({
     customer: true,
@@ -64,6 +65,29 @@ export class Order {
     static async validateNumber(number: string) {
         const order = await prisma.order.findUnique({ where: { number } })
         return order ? false : true
+    }
+
+    static async query(value: string) {
+        const list = await Order.list()
+        const customerResult = await Customer.query(value)
+
+        const keys: (keyof Order)[] = ["number"]
+        const fuse = new Fuse(list, {
+            keys,
+            threshold: 0.2,
+        })
+        const results = fuse.search(value).map((result) => result.item)
+
+        for (const customer of customerResult) {
+            const customerOrders = list.filter((order) => order.customerId === customer.id)
+            for (const order of customerOrders) {
+                if (!results.find((r) => r.id === order.id)) {
+                    results.push(order)
+                }
+            }
+        }
+
+        return results
     }
 
     static async create(data: OrderForm) {
