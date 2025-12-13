@@ -123,6 +123,19 @@ export class Order {
                 payment_terms: data.payment_terms,
                 items: data.items ? JSON.stringify(data.items) : undefined,
                 type: data.type,
+                customer: {
+                    update: {
+                        city: data.customer?.city,
+                        cnpj: data.customer?.cnpj,
+                        company_name: data.customer?.company_name,
+                        state_registration: data.customer?.state_registration,
+                        street: data.customer?.street,
+                        neighborhood: data.customer?.neighborhood,
+                        state: data.customer?.state,
+                        phone: data.customer?.phone,
+                        name: data.customer?.name,
+                    },
+                },
             },
             include: order_include,
         })

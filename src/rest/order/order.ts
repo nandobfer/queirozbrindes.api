@@ -43,6 +43,8 @@ router.post("/", async (request: Request, response: Response) => {
 router.put("/", requireOrderId, async (request: OrderRequest, response: Response) => {
     const data = request.body as OrderForm
 
+    console.log("updating order:", data)
+
     try {
         const order = request.order!
         await order.update(data)
