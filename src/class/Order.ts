@@ -61,12 +61,17 @@ export class Order {
         return 1
     }
 
+    static async validateNumber(number: string) {
+        const order = await prisma.order.findUnique({ where: { number } })
+        return order ? false : true
+    }
+
     static async create(data: OrderForm) {
         const created = await prisma.order.create({
             data: {
                 customer: {
                     connectOrCreate: {
-                        where: { id: data.customerId || "create" },
+                        where: { id: data.customer.id || "create" },
                         create: {
                             name: data.customer.name,
                             city: data.customer.city,
@@ -81,7 +86,7 @@ export class Order {
                     },
                 },
                 items: JSON.stringify(data.items),
-                number: (await Order.getNextAvailableNumber()).toString(),
+                number: data.number,
                 order_date: data.order_date.toString(),
                 type: data.type,
                 observations: data.observations,
@@ -109,7 +114,6 @@ export class Order {
         this.customerId = data.customerId
         this.customer = new Customer(data.customer)
         this.items = JSON.parse(data.items as string)
-
     }
 
     async update(data: Partial<OrderForm>) {

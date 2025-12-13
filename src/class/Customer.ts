@@ -1,4 +1,6 @@
 import { Prisma } from "@prisma/client"
+import { prisma } from "../prisma"
+import Fuse from "fuse.js"
 
 type CustomerPrisma = Prisma.CustomerGetPayload<{}>
 
@@ -13,6 +15,21 @@ export class Customer {
     city?: string
     state?: string
     phone?: string
+
+    static async list() {
+        const result = await prisma.customer.findMany()
+        return result.map((data) => new Customer(data))
+    }
+
+    static async query(value: string) {
+        const list = await Customer.list()
+        const fuse = new Fuse(list, {
+            keys: ["name"],
+            threshold: 0.2,
+        })
+        const results = fuse.search(value)
+        return results.map((result) => result.item)
+    }
 
     constructor(data: CustomerPrisma) {
         this.id = data.id

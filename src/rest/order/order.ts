@@ -2,10 +2,11 @@ import express, { Express, Request, Response, Router } from "express"
 import { Order, OrderForm } from "../../class/Order"
 import { OrderRequest, requireOrderId } from "../../middlewares/requireOrderId"
 import item from "./item"
+import { Customer } from "../../class/Customer"
 
 const router: Router = express.Router()
 
-router.use('/item', requireOrderId, item)
+router.use("/item", requireOrderId, item)
 
 router.get("/", async (request: Request, response: Response) => {
     const order_id = request.query.order_id as string | undefined
@@ -75,6 +76,28 @@ router.get("/next-available-number", async (request: Request, response: Response
     }
 })
 
+router.get("/query-customer", async (request: Request, response: Response) => {
+    const query = request.query.query as string
+    try {
+        const result = await Customer.query(query)
+        console.log("customer query result:", result)
+        return response.json(result)
+    } catch (error) {
+        console.log(error)
+        response.status(500).send(error)
+    }
+})
 
+router.get("/validate-number", async (request: Request, response: Response) => {
+    const number = request.query.number as string
+
+    try {
+        const valid = await Order.validateNumber(number)
+        return response.json(valid)
+    } catch (error) {
+        console.log(error)
+        response.status(500).send(error)
+    }
+})
 
 export default router
