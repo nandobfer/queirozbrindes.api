@@ -2,8 +2,10 @@ import { Prisma } from "@prisma/client"
 import { Customer } from "./Customer"
 import { Item } from "./Item"
 import { prisma } from "../prisma"
-import { WithoutFunctions } from "./helpers"
+import { FileUpload, WithoutFunctions } from "./helpers"
 import Fuse from "fuse.js"
+import { saveFile } from "../tools/saveFile"
+import { UploadedFile } from "express-fileupload"
 
 export const order_include = Prisma.validator<Prisma.OrderInclude>()({
     customer: true,
@@ -17,11 +19,14 @@ export interface DeliveryDate {
 }
 
 export interface Attachment {
+    id: string
     filename: string
     url: string
+    width: number
+    height: number
 }
 
-export type OrderForm = Omit<WithoutFunctions<Order>, "id">
+export type OrderForm = Omit<WithoutFunctions<Order>, "id" | "images"> & { images?: Attachment[] }
 
 export class Order {
     id: string
@@ -32,8 +37,7 @@ export class Order {
     payment_terms?: string
 
     // json fields
-    images?: Attachment[]
-    drawings?: Attachment[]
+    images: Attachment[]
     delivery_date?: DeliveryDate
     items: Item[]
 
@@ -114,8 +118,7 @@ export class Order {
                 order_date: data.order_date.toString(),
                 type: data.type,
                 observations: data.observations,
-                images: data.images ? JSON.stringify(data.images) : undefined,
-                drawings: data.drawings ? JSON.stringify(data.drawings) : undefined,
+                images: JSON.stringify([]),
                 delivery_date: data.delivery_date ? JSON.stringify(data.delivery_date) : undefined,
                 payment_terms: data.payment_terms,
             },
@@ -130,8 +133,7 @@ export class Order {
         this.type = data.type as OrderType
         this.order_date = Number(data.order_date)
         this.observations = data.observations || undefined
-        this.images = data.images ? JSON.parse(data.images as string) : undefined
-        this.drawings = data.drawings ? JSON.parse(data.drawings as string) : undefined
+        this.images = data.images ? JSON.parse(data.images as string) : []
         this.delivery_date = data.delivery_date ? JSON.parse(data.delivery_date as string) : undefined
         this.payment_terms = data.payment_terms || undefined
 
@@ -145,11 +147,10 @@ export class Order {
             where: { id: this.id },
             data: {
                 delivery_date: data.delivery_date ? JSON.stringify(data.delivery_date) : undefined,
-                images: data.images ? JSON.stringify(data.images) : undefined,
-                drawings: data.drawings ? JSON.stringify(data.drawings) : undefined,
                 observations: data.observations,
                 payment_terms: data.payment_terms,
                 items: data.items ? JSON.stringify(data.items) : undefined,
+                images: data.images ? JSON.stringify(data.images) : undefined,
                 type: data.type,
                 customer: {
                     update: {
@@ -174,5 +175,20 @@ export class Order {
 
     async delete() {
         await prisma.order.delete({ where: { id: this.id } })
+    }
+
+    async uploadImages(images: UploadedFile[], data: Attachment[]) {
+        for (const [index, image] of images.entries()) {
+            const attachment = data[index]
+            attachment.url = saveFile(`orders/${this.id}`, image.data, image.name).url
+        }
+        await this.update({ images: data })
+        return this
+    }
+
+    async deleteImage(attachment_id: string) {
+        const updatedImages = this.images.filter((img) => img.id !== attachment_id)
+        await this.update({ images: updatedImages })
+        return this
     }
 }
