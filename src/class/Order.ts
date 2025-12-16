@@ -181,6 +181,7 @@ export class Order {
         for (const [index, image] of images.entries()) {
             const attachment = data[index]
             attachment.url = saveFile(`orders/${this.id}`, image.data, image.name).url
+            this.images.push(attachment)
         }
         await this.update({ images: data })
         return this
