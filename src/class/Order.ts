@@ -183,7 +183,7 @@ export class Order {
             attachment.url = saveFile(`orders/${this.id}`, image.data, image.name).url
             this.images.push(attachment)
         }
-        await this.update({ images: data })
+        await this.update({ images: this.images })
         return this
     }
 
