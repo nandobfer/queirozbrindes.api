@@ -20,6 +20,25 @@ router.post("/", requireOrderId, async (request: OrderRequest, response: Respons
     }
 })
 
+router.put("/", requireOrderId, async (request: OrderRequest, response: Response) => {
+    const data = request.body as Item
+
+    try {
+        const order = request.order!
+
+        for (const item of order.items) {
+            if (item.id === data.id) {
+                Object.assign(item, data)
+            }
+        }
+        await order.update({ items: order.items })
+        return response.json(order)
+    } catch (error) {
+        console.log(error)
+        response.status(500).send(error)
+    }
+})
+
 router.delete("/", requireItemId, async (request: ItemRequest, response: Response) => {
     try {
         const order = request.order!
