@@ -26,4 +26,4 @@ services:
 
 volumes:
   static_volume:
-    name: "planika_static_files"
+    name: "queirozbrindes_static_files"
