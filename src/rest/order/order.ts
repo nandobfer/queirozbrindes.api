@@ -162,4 +162,15 @@ router.delete("/image", requireOrderId, async (request: OrderRequest, response: 
     }
 })
 
+router.get("/pdf", requireOrderId, async (request: OrderRequest, response: Response) => {
+    try {
+        const order = request.order!
+        const path = await order.exportPdf()
+        return response.json(path)
+    } catch (error) {
+        console.log(error)
+        response.status(500).send(error)
+    }
+})
+
 export default router

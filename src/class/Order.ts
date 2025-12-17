@@ -6,6 +6,8 @@ import { FileUpload, WithoutFunctions } from "./helpers"
 import Fuse from "fuse.js"
 import { saveFile } from "../tools/saveFile"
 import { UploadedFile } from "express-fileupload"
+import { PdfField, PdfHandler } from "./PdfHandler"
+import { currencyMask } from "../tools/currencyMask"
 
 export const order_include = Prisma.validator<Prisma.OrderInclude>()({
     customer: true,
@@ -191,5 +193,70 @@ export class Order {
         const updatedImages = this.images.filter((img) => img.id !== attachment_id)
         await this.update({ images: updatedImages })
         return this
+    }
+
+    getTotal() {
+        return this.items.reduce((total, item) => total + item.unit_price * item.quantity, 0)
+    }
+
+    async exportPdf() {
+        const fields: PdfField[] = [
+            { name: "order_budget", value: this.type === "budget" ? "true" : "", type: "checkbox" },
+            { name: "order_not_budget", value: this.type === "order" ? "true" : "", type: "checkbox" },
+            { name: "order_number", value: this.number },
+            { name: "customer_name", value: this.customer.name },
+            { name: "customer_company_name", value: this.customer.company_name },
+            { name: "customer_cnpj", value: this.customer.cnpj },
+            { name: "customer_state_registration", value: this.customer.state_registration },
+            { name: "customer_street", value: this.customer.street },
+            { name: "customer_neighborhood", value: this.customer.neighborhood },
+            { name: "customer_city", value: this.customer.city },
+            { name: "customer_state", value: this.customer.state },
+            { name: "customer_ddd", value: this.customer.phone?.replace(/\D/g, "").slice(0, 2) },
+            { name: "customer_phone", value: this.customer.phone?.replace(/\D/g, "").slice(2) },
+            { name: "order_payment_terms", value: this.payment_terms },
+
+            { name: "order_date_day", value: new Date(this.order_date).getDate().toString() },
+            { name: "order_date_month", value: (new Date(this.order_date).getMonth() + 1).toString() },
+            { name: "order_date_year", value: new Date(this.order_date).getFullYear().toString() },
+
+            { name: "order_total", value: currencyMask(this.getTotal()) },
+            { name: "order_observations", value: this.observations },
+        ]
+
+        if (this.delivery_date?.from) {
+            fields.push(
+                { name: "delivery_date_from_day", value: new Date(this.delivery_date.from).getDate().toString() },
+                { name: "delivery_date_from_month", value: (new Date(this.delivery_date.from).getMonth() + 1).toString() },
+                { name: "delivery_date_from_year", value: new Date(this.delivery_date.from).getFullYear().toString() }
+            )
+        }
+
+        if (this.delivery_date?.to) {
+            fields.push(
+                { name: "delivery_date_to_day", value: new Date(this.delivery_date.to).getDate().toString() },
+                { name: "delivery_date_to_month", value: (new Date(this.delivery_date.to).getMonth() + 1).toString() },
+                { name: "delivery_date_to_year", value: new Date(this.delivery_date.to).getFullYear().toString() }
+            )
+        }
+
+        for (const [index, item] of this.items.entries()) {
+            fields.push(
+                { name: `quantity_${index}`, value: item.quantity.toString() },
+                { name: `description_${index}`, value: item.description },
+                { name: `unit_price_${index}`, value: currencyMask(item.unit_price) },
+                { name: `subtotal_${index}`, value: currencyMask(item.unit_price * item.quantity) }
+            )
+        }
+
+        const pdf = new PdfHandler({
+            fields,
+            template_path: "src/templates/queirozbrindez_talao.pdf",
+            output_dir: "static/orders",
+            filename: `${this.type === "budget" ? "orcamento" : "pedido"}_${this.customer.name.replace(/\s+/g, "_")}_${this.number}.pdf`,
+        })
+
+        await pdf.fillForm()
+        return pdf.fullpath
     }
 }
