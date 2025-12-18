@@ -226,17 +226,17 @@ export class Order {
 
         if (this.delivery_date?.from) {
             fields.push(
-                { name: "delivery_date_from_day", value: new Date(this.delivery_date.from).getDate().toString() },
-                { name: "delivery_date_from_month", value: (new Date(this.delivery_date.from).getMonth() + 1).toString() },
-                { name: "delivery_date_from_year", value: new Date(this.delivery_date.from).getFullYear().toString() }
+                { name: "order_delivery_from_day", value: new Date(this.delivery_date.from).getDate().toString() },
+                { name: "order_delivery_from_month", value: (new Date(this.delivery_date.from).getMonth() + 1).toString() },
+                { name: "order_delivery_from_year", value: new Date(this.delivery_date.from).getFullYear().toString() }
             )
         }
 
         if (this.delivery_date?.to) {
             fields.push(
-                { name: "delivery_date_to_day", value: new Date(this.delivery_date.to).getDate().toString() },
-                { name: "delivery_date_to_month", value: (new Date(this.delivery_date.to).getMonth() + 1).toString() },
-                { name: "delivery_date_to_year", value: new Date(this.delivery_date.to).getFullYear().toString() }
+                { name: "order_delivery_to_day", value: new Date(this.delivery_date.to).getDate().toString() },
+                { name: "order_delivery_to_month", value: (new Date(this.delivery_date.to).getMonth() + 1).toString() },
+                { name: "order_delivery_to_year", value: new Date(this.delivery_date.to).getFullYear().toString() }
             )
         }
 
@@ -247,6 +247,10 @@ export class Order {
                 { name: `unit_price_${index}`, value: currencyMask(item.unit_price) },
                 { name: `subtotal_${index}`, value: currencyMask(item.unit_price * item.quantity) }
             )
+        }
+
+        for (const [index, attachment] of this.images.entries()) {
+            fields.push({ name: `attachment_${index}`, value: attachment.url, type: "image" })
         }
 
         const pdf = new PdfHandler({
