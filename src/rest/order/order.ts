@@ -93,8 +93,7 @@ router.get("/query-customer", async (request: Request, response: Response) => {
     const query = request.query.query as string
     try {
         const result = await Customer.query(query)
-        console.log("customer query result:", result)
-        return response.json(result)
+        return response.json(result.slice(0, 10))
     } catch (error) {
         console.log(error)
         response.status(500).send(error)
