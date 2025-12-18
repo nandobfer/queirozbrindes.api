@@ -250,7 +250,13 @@ export class Order {
         }
 
         for (const [index, attachment] of this.images.entries()) {
-            fields.push({ name: `attachment_${index}`, value: attachment.url, type: "image" })
+            fields.push({ name: `Button${index + 1}`, value: attachment.url, type: "image" })
+        }
+
+        const maxImages = Math.min(this.images.length, 3)
+        const fieldsToDelete: string[] = []
+        for (let i = maxImages; i < 3; i++) {
+            fieldsToDelete.push(`Button${i + 1}`)
         }
 
         const pdf = new PdfHandler({
@@ -260,7 +266,7 @@ export class Order {
             filename: `${this.type === "budget" ? "orcamento" : "pedido"}_${this.customer.name.replace(/\s+/g, "_")}_${this.number}.pdf`,
         })
 
-        await pdf.fillForm()
+        await pdf.fillForm(fieldsToDelete)
         return pdf.fullpath
     }
 }

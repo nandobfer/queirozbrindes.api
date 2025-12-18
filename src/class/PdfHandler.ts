@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs"
 import { WithoutFunctions } from "./helpers"
-import { PDFDocument, PDFForm } from "pdf-lib"
+import { PDFButton, PDFDocument, PDFForm, PDFTextField } from "pdf-lib"
 import path from "path"
 import fontkit from "@pdf-lib/fontkit"
 import { getLocalUrl } from "../tools/getLocalUrl"
@@ -45,7 +45,7 @@ export class PdfHandler {
         this.form = this.document.getForm()
     }
 
-    async fillForm() {
+    async fillForm(fieldsToDelete: string[] = []) {
         if (!this.form || !this.document) {
             await this.init()
         }
@@ -69,11 +69,28 @@ export class PdfHandler {
             }
         }
 
+        // Debug form fields
+        console.log("=== DEBUG: Form Fields ===")
+        const formFields = this.form.getFields()
+        formFields.forEach((field, index) => {
+            console.log(`${index + 1}. ${field.getName()} - Type: ${field.constructor.name}`)
+        })
+        console.log("=== END DEBUG ===")
+
         for (const field of this.fields) {
             try {
+                // image field
                 if (field.type === "image") {
+                    const endpoint = field.value!.split("static/").pop()
+                    const imageBytes = readFileSync(`static/${endpoint}`)
+                    const extension = endpoint!.split(".").pop()
+                    const image = extension === "png" ? await this.document!.embedPng(imageBytes) : await this.document!.embedJpg(imageBytes)
+                    const button = this.form!.getButton(field.name)
+                    button.setImage(image)
                     continue
                 }
+
+                // checkbox field
                 if (field.type === "checkbox") {
                     const checkbox = this.form!.getCheckBox(field.name)
                     if (field.value === "true") {
@@ -95,6 +112,17 @@ export class PdfHandler {
                 }
             } catch (error) {
                 console.log(`error setting ${field.name} `)
+                console.log(error)
+                console.log(field.value)
+            }
+        }
+
+        for (const fieldName of fieldsToDelete) {
+            try {
+                const field = this.form.getField(fieldName)
+                this.form.removeField(field)
+            } catch (error) {
+                console.log(`error deleting field ${fieldName} `)
                 console.log(error)
             }
         }
@@ -123,24 +151,6 @@ export class PdfHandler {
             console.error(`Ghostscript error: ${error}`)
             return false
         }
-    }
-
-    async updateImage(field_name: string, image_path: string, image_base64?: string) {
-        if (!this.form || !this.document) {
-            await this.init()
-        }
-
-        const imageBytes = image_path && readFileSync(path.join(__dirname, `./image`))
-        const image = await this.document!.embedPng(image_base64 || imageBytes)
-
-        try {
-            const button = this.form!.getButton(field_name)
-            button.setImage(image)
-        } catch (error) {
-            console.log(error)
-        }
-
-        await this.save()
     }
 
     async save() {
